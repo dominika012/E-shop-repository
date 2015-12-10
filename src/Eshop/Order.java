@@ -18,7 +18,14 @@ public class Order {
         
 	@Override
 	public String toString() {
-		return "Order " + id + " : \n products= \n" + products + "]";
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("\n Order  id:  " + id + "\n");
+            String productString = "";
+            for(Product product:products){
+                productString = product.toString();
+                stringBuilder.append("\t" + productString);
+            }
+		return stringBuilder.toString();
 	}
 
 	@Override
