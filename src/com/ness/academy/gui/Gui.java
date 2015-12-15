@@ -3,14 +3,15 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Eshop;
+package com.ness.academy.gui;
 
+import com.ness.academy.bean.Product;
+import com.ness.academy.controller.OrderService;
+import com.ness.academy.controller.ProductService;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.swing.DefaultListModel;
-import javax.swing.JComboBox;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.ListModel;
 
@@ -24,14 +25,13 @@ public class Gui extends javax.swing.JFrame {
      * Creates new form Gui
      */
     
-    ProductManager productManager;
-    OrderManager orderManager;
-    
+    ProductService productManager;
+    OrderService orderManager;
     public Gui() {
         initComponents();
         
-        productManager = new ProductManager();
-        orderManager = new OrderManager();
+        productManager = new ProductService();
+        orderManager = new OrderService();
     }
 
     /**
@@ -297,52 +297,40 @@ public class Gui extends javax.swing.JFrame {
 
     private void addProductButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_addProductButtonMouseClicked
       
-        if(pName.getText().isEmpty() || pDescription.getText().isEmpty() || pPrice.getText().isEmpty()){
-            JOptionPane.showMessageDialog(null, "Empty Text box. Please, fill them all.");
-        }
-        else{
-            if (isDouble(pPrice.getText())==true) {
                 String name = pName.getText();
                 String description = pDescription.getText();
-                double price = Double.parseDouble(pPrice.getText());
-                Product product = new Product(name,description, price);
-                productManager.addProduct(product);
-                pName.setText("");
-                pDescription.setText("");
-                pPrice.setText("");
-                refresh();
-            }
-             else
-                 JOptionPane.showMessageDialog(null, "Price is real number.");
-        }
+                String price = pPrice.getText();
+                if(productManager.canAdd(name, description, price)==true){
+                    productManager.add(name, description, price);
+                    pName.setText("");
+                    pDescription.setText("");
+                    pPrice.setText("");
+                    refresh();
+                }
+                else
+                 JOptionPane.showMessageDialog(null, "Can not add product. Invalid input.");
     }//GEN-LAST:event_addProductButtonMouseClicked
 
-    private boolean isDouble(String str) {
-        try {
-            Double.parseDouble(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
-    }
+    List<Product> prods = new ArrayList<Product>();
     
     private void addProductToOrderButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_addProductToOrderButtonMouseClicked
         String name = (String) productsCombo.getSelectedItem();
-        Product product = productManager.searchByName(name);
-        if(product!=null)
-            orderManager.addProduct(product);
-        refresh();
+        Product product = productManager.getByName(name);
+        DefaultListModel<String> model = new DefaultListModel<>();
+        prods.add(product);
+        for(int i = 0; i<prods.size();i++){
+            model.addElement(prods.get(i).toString());
+        }
+        orderProducts.setModel(model);
     }//GEN-LAST:event_addProductToOrderButtonMouseClicked
 
     private void orderButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_orderButtonMouseClicked
-        List<Product> products = orderManager.getListProducts();
-        Order order = new Order(products);
-        if(!products.isEmpty()){
-            orderManager.addOrder(order);
-            orders.setText(orderManager.getListOrders().toString());
-            orderManager.newListProducts();
-            refresh();
-        }
+        orderManager.addOrder(prods);
+        if(!prods.isEmpty())
+            orders.setText(this.orderManager.orders().toString());
+        refresh();
+        prods = new ArrayList<Product>();
+        clearJList(orderProducts);
     }//GEN-LAST:event_orderButtonMouseClicked
 
     private void removeProductMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_removeProductMouseClicked
@@ -352,40 +340,32 @@ public class Gui extends javax.swing.JFrame {
 
     private void refresh(){
         productsCombo.removeAllItems();
-        for(Product productName:productManager.getListProducts()){
+        for(Product productName:productManager.products()){
                 productsCombo.addItem(productName.getName());
             }
-        //String orderString = orderManager.getListProducts().toString();
-        //String productString = productManager.getListProducts().toString();
         addItemsToJLists();
     }
     
+    private void clearJList(JList jl){
+        DefaultListModel listModel = (DefaultListModel) jl.getModel();
+        listModel.removeAllElements();
+    }
+    
     private void removeJListItem(){
-       /* String string = products.getSelectedValue();
-        Product product = productManager.searchByString(string);
-        productManager.removeProduct(product);
-        refresh();*/
-       
        ListModel model = products.getModel();
 
         for(int index : products.getSelectedIndices()) {
             String string = model.getElementAt(index).toString();
-            Product product = productManager.searchByString(string);
-            productManager.removeProduct(product);
+            this.productManager.removeByString(string);
         }
         refresh();
     }
     
     private void addItemsToJLists(){
-        List<Product> copyProducts =  productManager.getListProducts();
+        List<Product> copyProducts =  productManager.products();
         products.setModel(new DefaultListModel());
         for (Product element : copyProducts) {
          ((DefaultListModel) products.getModel()).addElement(element);
-        }
-        List<Product> copyOrderedProducts =  orderManager.getListProducts();
-        orderProducts.setModel(new DefaultListModel());
-        for (Product element : copyOrderedProducts) {
-         ((DefaultListModel) orderProducts.getModel()).addElement(element);
         }
     }
     
